@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { StarRating as StarRatingValue } from '@/data/placeholder';
+import type { StarRating as StarRatingValue } from '@/types/graphql';
 
 const STAR_VALUES: StarRatingValue[] = [1, 2, 3, 4, 5];
 
