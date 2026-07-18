@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { StarRating } from '@/data/placeholder';
+import type { StarRating } from '@/types/graphql';
 
 const STAR_VALUES: StarRating[] = [5, 4, 3, 2, 1];
 

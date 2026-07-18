@@ -1,5 +1,7 @@
 import { useEffect, useId, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useMutation } from '@apollo/client/react';
 import { cn } from '@/lib/utils';
+import { getFriendlyErrorMessage } from '@/lib/graphql-errors';
 import { StarRatingSelect } from '@/components/StarRating';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,18 +14,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { EventOption, FeedbackEntry, StarRating } from '@/data/placeholder';
+import { SUBMIT_FEEDBACK_MUTATION } from '@/graphql/operations';
+import type { EventOption, StarRating } from '@/types/graphql';
+
+const ANONYMOUS_SUBMITTER_NAME = 'Anonymous';
 
 interface FeedbackFormProps {
   events: EventOption[];
-  onSubmit: (entry: Omit<FeedbackEntry, 'id' | 'submittedAt'>) => void;
 }
 
-export function FeedbackForm({ events, onSubmit }: FeedbackFormProps) {
+export function FeedbackForm({ events }: FeedbackFormProps) {
   const [eventId, setEventId] = useState('');
   const [rating, setRating] = useState<StarRating | null>(null);
-  const [text, setText] = useState('');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const [submitFeedback, { loading: submitting }] = useMutation(SUBMIT_FEEDBACK_MUTATION);
 
   const eventSelectId = useId();
   const reviewId = useId();
@@ -31,7 +37,7 @@ export function FeedbackForm({ events, onSubmit }: FeedbackFormProps) {
   const selectedEvent = events.find((event) => event.id === eventId) ?? null;
   const isFormVisible = selectedEvent !== null;
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!selectedEvent) {
@@ -41,23 +47,39 @@ export function FeedbackForm({ events, onSubmit }: FeedbackFormProps) {
       setError('Please select a star rating.');
       return;
     }
-    if (text.trim().length === 0) {
+    const trimmedDescription = description.trim();
+    if (trimmedDescription.length === 0) {
       setError('Please enter your feedback.');
       return;
     }
 
     setError(null);
-    onSubmit({
-      eventId: selectedEvent.id,
-      eventName: selectedEvent.name,
-      submitterName: 'You',
-      rating,
-      text: text.trim(),
-    });
 
-    setEventId('');
-    setRating(null);
-    setText('');
+    try {
+      const { data } = await submitFeedback({
+        variables: {
+          input: {
+            eventId: selectedEvent.id,
+            submitterName: ANONYMOUS_SUBMITTER_NAME,
+            rating,
+            description: trimmedDescription,
+          },
+        },
+      });
+
+      if (!data) {
+        setError('Something went wrong submitting your feedback. Please try again.');
+        return;
+      }
+
+      setEventId('');
+      setRating(null);
+      setDescription('');
+    } catch (submitError) {
+      setError(
+        getFriendlyErrorMessage(submitError, 'Unable to submit your feedback. Please try again.'),
+      );
+    }
   }
 
   function handleReviewKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -108,9 +130,9 @@ export function FeedbackForm({ events, onSubmit }: FeedbackFormProps) {
                 <Label htmlFor={reviewId}>Your review</Label>
                 <Textarea
                   id={reviewId}
-                  value={text}
+                  value={description}
                   onChange={(e) => {
-                    setText(e.target.value);
+                    setDescription(e.target.value);
                     setError(null);
                   }}
                   onKeyDown={handleReviewKeyDown}
@@ -131,8 +153,8 @@ export function FeedbackForm({ events, onSubmit }: FeedbackFormProps) {
                 </p>
               )}
 
-              <Button type="submit" className="self-start">
-                Submit feedback
+              <Button type="submit" className="self-start" disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Submit feedback'}
               </Button>
             </RevealedFields>
           )}
