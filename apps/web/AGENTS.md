@@ -1,0 +1,2 @@
+- Use [shadcn/ui components](https://ui.shadcn.com/docs/components) when available for UI elements.
+- Use [Tailwind CSS](https://tailwindcss.com/docs/installation/using-vite) styling/classes
