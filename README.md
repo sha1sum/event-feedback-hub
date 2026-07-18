@@ -69,6 +69,10 @@ Functionality is not complete without testing. In fact, I prefer to use test-dri
 
 I have added a GitHub Actions workflow to run common CI tasks, such as linting, typechecking, and tests.
 
+## Agent Interactions
+
+To help you see how I work, I have added `docs/agent-interactions`, which has numbered subdirectories with agent transcripts exported into each. If there was a plan involved, the plan will be in the folder as well. Hopefully this allows you to see my iterative process using AI development.
+
 ## Getting Started
 
 ### Prerequisites
