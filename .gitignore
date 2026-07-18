@@ -1,0 +1,37 @@
+.cursor/plans
+
+# Dependencies
+node_modules/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Build outputs
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Testing / coverage
+coverage/
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
