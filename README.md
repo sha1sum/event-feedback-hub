@@ -5,6 +5,8 @@
 
 This repo houses a platform that allows users to provide feedback on events they attended and to see feedback that others have provided.
 
+![Event Feedback Hub screenshot](./docs/screenshot.png)
+
 ## Requirements
 
 Some elements of the stack have been decided in advance, as is typical in a real-world business setting.

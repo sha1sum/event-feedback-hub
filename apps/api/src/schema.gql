@@ -1,0 +1,68 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Event {
+  createdAt: DateTime!
+  date: String!
+  id: ID!
+  location: String!
+  name: String!
+  updatedAt: DateTime!
+}
+
+type Feedback {
+  createdAt: DateTime!
+  description: String!
+  event: Event!
+  eventId: ID!
+  eventName: String!
+  id: ID!
+  rating: Int!
+  submitterName: String!
+}
+
+input FeedbackFilterInput {
+  eventId: ID
+  limit: Int! = 20
+  offset: Int! = 0
+  ratings: [Int!]
+}
+
+type FeedbackPage {
+  hasMore: Boolean!
+  items: [Feedback!]!
+  limit: Int!
+  offset: Int!
+  totalCount: Int!
+}
+
+input FeedbackSubscriptionFilterInput {
+  eventId: ID
+  ratings: [Int!]
+}
+
+type Mutation {
+  submitFeedback(input: SubmitFeedbackInput!): Feedback!
+}
+
+type Query {
+  events: [Event!]!
+  feedback(filter: FeedbackFilterInput): FeedbackPage!
+}
+
+input SubmitFeedbackInput {
+  description: String!
+  eventId: ID!
+  rating: Int!
+  submitterName: String!
+}
+
+type Subscription {
+  feedbackAdded(filter: FeedbackSubscriptionFilterInput): Feedback!
+}
