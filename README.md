@@ -65,6 +65,10 @@ I am not a designer. For a demonstration project, choosing a simple styling libr
 
 Functionality is not complete without testing. In fact, I prefer to use test-driven development. With the agentic AI age in which we live, this is done sometimes by me writing the tests and asking the agent to make them pass without altering the tests or otherwise tell me why the tests are flawed. In any case, tests are written, which is the most important part.
 
+### Extras
+
+I have added a GitHub Actions workflow to run common CI tasks, such as linting, typechecking, and tests.
+
 ## Getting Started
 
 ### Prerequisites
