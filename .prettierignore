@@ -1,0 +1,12 @@
+.cursor
+.yarn
+.pnp.*
+node_modules
+docs/plans
+dist
+build
+coverage
+.turbo
+*.sqlite
+*.sqlite3
+CHANGELOG.md

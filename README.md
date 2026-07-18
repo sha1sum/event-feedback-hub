@@ -83,6 +83,9 @@ yarn install
 
 This installs dependencies for every workspace (`apps/api` and `apps/web`) in one pass, using Yarn's `node-modules` linker for maximum compatibility with native modules like `better-sqlite3`.
 
+> [!WARNING]
+> The `.env` file has been committed to source control for the `api` application, which is abnormal. I did this to make it easier for evaluators to run the application locally without fiddling around with environment variables.
+
 ### Common workspace commands
 
 All commands below are run from the repository root and are orchestrated by [Turborepo](https://turborepo.dev), which fans them out to the relevant workspace(s):
