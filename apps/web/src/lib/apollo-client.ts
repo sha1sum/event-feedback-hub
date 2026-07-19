@@ -1,10 +1,13 @@
 import { ApolloClient, HttpLink, InMemoryCache, split } from '@apollo/client';
+import { SetContextLink } from '@apollo/client/link/context';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import { OperationTypeNode } from 'graphql';
 
 const httpUri = import.meta.env.VITE_GRAPHQL_HTTP_URL ?? '/graphql';
 const wsUri = import.meta.env.VITE_GRAPHQL_WS_URL ?? deriveWebSocketUrl(httpUri);
+
+type GetToken = () => Promise<string | null>;
 
 function deriveWebSocketUrl(uri: string): string {
   if (typeof window === 'undefined') {
@@ -15,24 +18,36 @@ function deriveWebSocketUrl(uri: string): string {
   return url.toString();
 }
 
-const httpLink = new HttpLink({ uri: httpUri });
+export function createApolloClient(getToken: GetToken) {
+  const authLink = new SetContextLink(async (previousContext) => {
+    const token = await getToken();
 
-const wsLink =
-  typeof window !== 'undefined'
-    ? new GraphQLWsLink(
-        createClient({
-          url: wsUri,
-          lazy: true,
-          retryAttempts: Infinity,
-        }),
-      )
-    : null;
+    return {
+      headers: {
+        ...previousContext.headers,
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+    };
+  });
+  const httpLink = authLink.concat(new HttpLink({ uri: httpUri }));
 
-const link = wsLink
-  ? split(({ operationType }) => operationType === OperationTypeNode.SUBSCRIPTION, wsLink, httpLink)
-  : httpLink;
+  const wsLink =
+    typeof window !== 'undefined'
+      ? new GraphQLWsLink(
+          createClient({
+            url: wsUri,
+            lazy: true,
+            retryAttempts: Infinity,
+          }),
+        )
+      : null;
 
-export const apolloClient = new ApolloClient({
-  link,
-  cache: new InMemoryCache(),
-});
+  const link = wsLink
+    ? split(({ operationType }) => operationType === OperationTypeNode.SUBSCRIPTION, wsLink, httpLink)
+    : httpLink;
+
+  return new ApolloClient({
+    link,
+    cache: new InMemoryCache(),
+  });
+}

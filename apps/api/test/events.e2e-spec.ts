@@ -6,6 +6,7 @@ import { PubSub } from 'graphql-subscriptions';
 import request from 'supertest';
 import { Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
+import { ClerkAuthGuard } from '../src/auth/clerk-auth.guard';
 import dataSource from '../src/database/data-source';
 import { Event } from '../src/events/entities/event.entity';
 import { Feedback } from '../src/events/entities/feedback.entity';
@@ -45,7 +46,10 @@ describe('Events GraphQL (e2e)', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(ClerkAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleFixture.createNestApplication<INestApplication<Server>>();
     app.useGlobalPipes(

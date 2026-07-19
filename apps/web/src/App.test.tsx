@@ -4,6 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
+import { setMockClerkSignedIn, setMockClerkTokenResponses } from './test/setup';
 import {
   EVENTS_QUERY,
   FEEDBACK_ADDED_SUBSCRIPTION,
@@ -136,7 +137,9 @@ describe('App', () => {
     expect(
       screen.getByText((_, element) => element?.tagName === 'SPAN' && element.textContent === 'Event Feedback Hub'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open user menu/i })).toBeInTheDocument();
     expect(screen.getByText(/all rights reserved/i)).toBeInTheDocument();
 
     expect(await screen.findByRole('heading', { name: /share your feedback/i })).toBeInTheDocument();
@@ -161,13 +164,13 @@ describe('App', () => {
     expect(screen.getByLabelText(/your review/i)).toBeInTheDocument();
   });
 
-  it('submits new feedback anonymously and prepends it to the stream once the server confirms it', async () => {
+  it("submits new feedback with the signed-in user's full name and prepends it to the stream", async () => {
     const user = userEvent.setup();
     const submittedFeedback: FeedbackEntry = {
       id: 'fb-new-1',
       eventId: EVENT_1.id,
       eventName: EVENT_1.name,
-      submitterName: 'Anonymous',
+      submitterName: 'Test User',
       rating: 4,
       description: 'Really enjoyed the sessions this year.',
       createdAt: '2026-07-18T00:00:00Z',
@@ -182,7 +185,7 @@ describe('App', () => {
           variables: {
             input: {
               eventId: EVENT_1.id,
-              submitterName: 'Anonymous',
+              submitterName: 'Test User',
               rating: 4,
               description: 'Really enjoyed the sessions this year.',
             },
@@ -191,6 +194,7 @@ describe('App', () => {
         result: { data: { submitFeedback: asFeedback(submittedFeedback) } },
         delay: 0,
       },
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), [submittedFeedback]),
       feedbackAddedMock(undefined, undefined, submittedFeedback),
     ]);
 
@@ -209,8 +213,66 @@ describe('App', () => {
     const cardContainer = card.closest('li');
     expect(cardContainer).not.toBeNull();
     expect(within(cardContainer!).getByText('Annual Tech Summit 2026')).toBeInTheDocument();
-    expect(within(cardContainer!).getByText('Anonymous')).toBeInTheDocument();
+    expect(within(cardContainer!).getByText('Test User')).toBeInTheDocument();
     expect(within(cardContainer!).getByRole('img', { name: /rated 4 out of 5 stars/i })).toBeInTheDocument();
+  });
+
+  it('restores and submits a completed draft after authentication', async () => {
+    setMockClerkSignedIn(false);
+    const user = userEvent.setup();
+    const submittedFeedback: FeedbackEntry = {
+      id: 'fb-after-auth',
+      eventId: EVENT_1.id,
+      eventName: EVENT_1.name,
+      submitterName: 'Test User',
+      rating: 5,
+      description: 'Keep this review through sign-in.',
+      createdAt: '2026-07-19T00:00:00Z',
+    };
+
+    const initialView = renderApp([
+      eventsMock(),
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), []),
+      idleSubscriptionMock(),
+    ]);
+
+    await selectEvent(user, EVENT_1.name);
+    await user.click(screen.getByRole('radio', { name: '5 stars' }));
+    await user.type(screen.getByLabelText(/your review/i), 'Keep this review through sign-in.');
+    await user.click(screen.getByRole('button', { name: /sign in to submit/i }));
+
+    expect(window.localStorage).toHaveLength(1);
+    window.sessionStorage.clear();
+    initialView.unmount();
+
+    setMockClerkSignedIn(true);
+    setMockClerkTokenResponses([null, null, 'test-session-token']);
+    renderApp([
+      eventsMock(),
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), []),
+      idleSubscriptionMock(),
+      {
+        request: {
+          query: SUBMIT_FEEDBACK_MUTATION,
+          variables: {
+            input: {
+              eventId: EVENT_1.id,
+              submitterName: 'Test User',
+              rating: 5,
+              description: 'Keep this review through sign-in.',
+            },
+          },
+        },
+        result: { data: { submitFeedback: asFeedback(submittedFeedback) } },
+        delay: 0,
+      },
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), [submittedFeedback]),
+    ]);
+
+    expect(await screen.findByText('Select an event…')).toBeInTheDocument();
+    expect(window.localStorage).toHaveLength(0);
+    expect(await screen.findByText('Keep this review through sign-in.')).toBeInTheDocument();
+    expect(screen.getByText('Test User')).toBeInTheDocument();
   });
 
   it('submits the form when pressing ctrl+enter or meta+enter in the review textarea', async () => {
@@ -219,7 +281,7 @@ describe('App', () => {
       id: 'fb-new-2',
       eventId: EVENT_2.id,
       eventName: EVENT_2.name,
-      submitterName: 'Anonymous',
+      submitterName: 'Test User',
       rating: 5,
       description: 'Submitted via keyboard shortcut.',
       createdAt: '2026-07-18T00:00:00Z',
@@ -234,7 +296,7 @@ describe('App', () => {
           variables: {
             input: {
               eventId: EVENT_2.id,
-              submitterName: 'Anonymous',
+              submitterName: 'Test User',
               rating: 5,
               description: 'Submitted via keyboard shortcut.',
             },
@@ -243,6 +305,7 @@ describe('App', () => {
         result: { data: { submitFeedback: asFeedback(submittedFeedback) } },
         delay: 0,
       },
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), [submittedFeedback]),
       feedbackAddedMock(undefined, undefined, submittedFeedback),
     ]);
 
@@ -290,7 +353,7 @@ describe('App', () => {
           variables: {
             input: {
               eventId: EVENT_1.id,
-              submitterName: 'Anonymous',
+              submitterName: 'Test User',
               rating: 3,
               description: 'This event no longer exists.',
             },
