@@ -2,7 +2,7 @@ import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockLink } from '@apollo/client/testing';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { setMockClerkSignedIn, setMockClerkTokenResponses } from './test/setup';
 import {
@@ -84,10 +84,7 @@ function feedbackMock(
 }
 
 /** A subscription mock that never resolves, so it stays quietly subscribed without affecting the test. */
-function idleSubscriptionMock(
-  eventId?: string,
-  ratings?: StarRating[],
-): MockLink.MockedResponse {
+function idleSubscriptionMock(eventId?: string, ratings?: StarRating[]): MockLink.MockedResponse {
   return {
     request: {
       query: FEEDBACK_ADDED_SUBSCRIPTION,
@@ -135,14 +132,18 @@ describe('App', () => {
 
     expect(screen.getByAltText('Event Feedback Hub logo')).toBeInTheDocument();
     expect(
-      screen.getByText((_, element) => element?.tagName === 'SPAN' && element.textContent === 'Event Feedback Hub'),
+      screen.getByText(
+        (_, element) => element?.tagName === 'SPAN' && element.textContent === 'Event Feedback Hub',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /open user menu/i })).toBeInTheDocument();
     expect(screen.getByText(/all rights reserved/i)).toBeInTheDocument();
 
-    expect(await screen.findByRole('heading', { name: /share your feedback/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /share your feedback/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /feedback from attendees/i })).toBeInTheDocument();
   });
 
@@ -200,7 +201,10 @@ describe('App', () => {
 
     await selectEvent(user, EVENT_1.name);
     await user.click(screen.getByRole('radio', { name: '4 stars' }));
-    await user.type(screen.getByLabelText(/your review/i), 'Really enjoyed the sessions this year.');
+    await user.type(
+      screen.getByLabelText(/your review/i),
+      'Really enjoyed the sessions this year.',
+    );
     await user.click(screen.getByRole('button', { name: /submit feedback/i }));
 
     // The form resets after a successful submission.
@@ -214,7 +218,9 @@ describe('App', () => {
     expect(cardContainer).not.toBeNull();
     expect(within(cardContainer!).getByText('Annual Tech Summit 2026')).toBeInTheDocument();
     expect(within(cardContainer!).getByText('Test User')).toBeInTheDocument();
-    expect(within(cardContainer!).getByRole('img', { name: /rated 4 out of 5 stars/i })).toBeInTheDocument();
+    expect(
+      within(cardContainer!).getByRole('img', { name: /rated 4 out of 5 stars/i }),
+    ).toBeInTheDocument();
   });
 
   it('restores and submits a completed draft after authentication', async () => {
@@ -332,7 +338,9 @@ describe('App', () => {
 
     expect(within(firstCard).getByText('Maria Chen')).toBeInTheDocument();
     expect(within(firstCard).getByText(/fantastic lineup of speakers/i)).toBeInTheDocument();
-    expect(within(firstCard).getByRole('img', { name: /rated 5 out of 5 stars/i })).toBeInTheDocument();
+    expect(
+      within(firstCard).getByRole('img', { name: /rated 5 out of 5 stars/i }),
+    ).toBeInTheDocument();
 
     const timestamp = within(firstCard).getByText(/ago$/i);
     expect(timestamp.tagName).toBe('TIME');
@@ -410,7 +418,10 @@ describe('App', () => {
 
     renderApp([
       eventsMock(),
-      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), [FEEDBACK_1], { hasMore: true, totalCount: 2 }),
+      feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), [FEEDBACK_1], {
+        hasMore: true,
+        totalCount: 2,
+      }),
       idleSubscriptionMock(),
       feedbackMock(buildFeedbackFilter(undefined, undefined, 1, PAGE_SIZE), [secondPageItem], {
         hasMore: false,
@@ -426,5 +437,61 @@ describe('App', () => {
     expect(await screen.findByText('Great content overall.')).toBeInTheDocument();
     expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument();
+  });
+
+  describe('Simulate button', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('POSTs to the simulate endpoint when clicked', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderApp([
+        eventsMock(),
+        feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), []),
+        idleSubscriptionMock(),
+      ]);
+
+      const simulateButton = await screen.findByRole('button', { name: /simulate/i });
+      await user.click(simulateButton);
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/events/simulate', { method: 'POST' });
+      expect(await screen.findByRole('button', { name: /simulate/i })).not.toBeDisabled();
+    });
+
+    it('shows a conflict message when a simulation is already running', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 409 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderApp([
+        eventsMock(),
+        feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), []),
+        idleSubscriptionMock(),
+      ]);
+
+      await user.click(await screen.findByRole('button', { name: /simulate/i }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/already running/i);
+    });
+
+    it('shows a friendly error when the request fails', async () => {
+      const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderApp([
+        eventsMock(),
+        feedbackMock(buildFeedbackFilter(undefined, undefined, 0, PAGE_SIZE), []),
+        idleSubscriptionMock(),
+      ]);
+
+      await user.click(await screen.findByRole('button', { name: /simulate/i }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/unable to start the simulation/i);
+    });
   });
 });

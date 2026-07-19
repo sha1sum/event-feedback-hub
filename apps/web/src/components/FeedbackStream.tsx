@@ -28,12 +28,19 @@ export function FeedbackStream({ events }: FeedbackStreamProps) {
   const [ratingFilter, setRatingFilter] = useState<Set<StarRating>>(new Set());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [realtimeError, setRealtimeError] = useState(false);
+  const [isStartingSimulation, setIsStartingSimulation] = useState(false);
+  const [simulateError, setSimulateError] = useState<string | null>(null);
 
   const eventFilterId = useId();
 
   const eventId = eventFilter === ALL_EVENTS_VALUE ? undefined : eventFilter;
   const ratings = ratingFilter.size > 0 ? Array.from(ratingFilter) : undefined;
-  const ratingsKey = ratings ? ratings.slice().sort((a, b) => a - b).join(',') : '';
+  const ratingsKey = ratings
+    ? ratings
+        .slice()
+        .sort((a, b) => a - b)
+        .join(',')
+    : '';
 
   const { data, loading, error, fetchMore, subscribeToMore, refetch } = useQuery(FEEDBACK_QUERY, {
     variables: { filter: buildFeedbackFilter(eventId, ratings, 0, PAGE_SIZE) },
@@ -103,14 +110,49 @@ export function FeedbackStream({ events }: FeedbackStreamProps) {
 
   const items = data?.feedback.items ?? [];
 
+  async function handleSimulate() {
+    setSimulateError(null);
+    setIsStartingSimulation(true);
+    try {
+      const response = await fetch('/api/events/simulate', { method: 'POST' });
+      if (!response.ok) {
+        setSimulateError(
+          response.status === 409
+            ? 'A simulation is already running. Please wait for it to finish.'
+            : 'Unable to start the simulation. Please try again.',
+        );
+      }
+    } catch {
+      setSimulateError('Unable to start the simulation. Please try again.');
+    } finally {
+      setIsStartingSimulation(false);
+    }
+  }
+
   return (
     <section aria-labelledby="feedback-stream-heading" className="mt-8">
-      <h2
-        id="feedback-stream-heading"
-        className="text-base font-semibold text-foreground sm:text-lg"
-      >
-        Feedback from attendees
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2
+          id="feedback-stream-heading"
+          className="text-base font-semibold text-foreground sm:text-lg"
+        >
+          Feedback from attendees
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSimulate}
+          disabled={isStartingSimulation}
+        >
+          {isStartingSimulation ? 'Starting…' : 'Simulate'}
+        </Button>
+      </div>
+
+      {simulateError && (
+        <p className="mt-2 text-xs text-destructive" role="alert">
+          {simulateError}
+        </p>
+      )}
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-2 sm:flex-1">
@@ -156,7 +198,9 @@ export function FeedbackStream({ events }: FeedbackStreamProps) {
       )}
 
       {data && items.length === 0 && (
-        <p className="mt-4 text-sm text-muted-foreground">No feedback matches the current filters yet.</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          No feedback matches the current filters yet.
+        </p>
       )}
 
       {data && items.length > 0 && (

@@ -7,6 +7,8 @@ This repo houses a platform that allows users to provide feedback on events they
 
 ![Event Feedback Hub screenshot](./docs/screenshot.png)
 
+Thank you for taking the time to review this. My hope is that I've made it as easy as possible to run this thing and evaluate it.
+
 ## Requirements
 
 Some elements of the stack have been decided in advance, as is typical in a real-world business setting.
@@ -108,4 +110,4 @@ yarn dev
 
 The application can be viewed at [http://localhost:1337/](http://localhost:1337/).
 
-The database has been committed to source control so that information can already been populated for evaluators.
+The database has been committed to source control so that information can already been populated for evaluators. There's is a "Simulate" button on the "Feedback from attendees" section which will call an endpoint that simulates other users' feedback being submitted in the background so that you can easily see the realtime communication.
