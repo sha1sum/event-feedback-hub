@@ -67,7 +67,7 @@ I am not a designer. For a demonstration project, choosing a simple styling libr
 
 ### Authentication
 
-Authentication was not asked for, but I wanted to add it because it's a fairly common feature in these sorts of applications (requiring sign-in before reviews). For the authentication, I started a new **[Clerk]https://clerk.com/)** account. I placed the environment variables for the development keys in the committed files, which is not normal practice but it should make things easier to review. I will be wiping the keys once the evaluation is completed.
+Authentication was not asked for, but I wanted to add it because it's a fairly common feature in these sorts of applications (requiring sign-in before reviews). For the authentication, I started a new **[Clerk](https://clerk.com/)** account. I placed the environment variables for the development keys in the committed files, which is not normal practice but it should make things easier to review. I will be wiping the keys once the evaluation is completed.
 
 ### Testing
 
