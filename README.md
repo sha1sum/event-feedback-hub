@@ -63,6 +63,10 @@ I am not a designer. For a demonstration project, choosing a simple styling libr
 
 **[Apollo Client](https://www.apollographql.com/docs/react)** was chosen for the data fetching. It makes sense given Apollo Server. One requirement of the project was the ability to see realtime feedback, which requires a method of asynchronous client/server updates. The GraphQL requirement and Apollo Client/Server makes choosing **[graphql-ws](https://github.com/enisdenjo/graphql-ws)** the clear choice. For pagination, I used offset-based pagination for its simplicity and for the fact that the size of the dataset for any given event is unlikely to cause performance issues in a production web application. I would usually not over-engineer this particular type of thing until the pain became obvious (_if_ it did).
 
+### Authentication
+
+Authentication was not asked for, but I wanted to add it because it's a fairly common feature in these sorts of applications (requiring sign-in before reviews). For the authentication, I started a new **[Clerk]https://clerk.com/)** account. I placed the environment variables for the development keys in the committed files, which is not normal practice but it should make things easier to review. I will be wiping the keys once the evaluation is completed.
+
 ### Testing
 
 Functionality is not complete without testing. In fact, I prefer to use test-driven development. With the agentic AI age in which we live, this is done sometimes by me writing the tests and asking the agent to make them pass without altering the tests or otherwise tell me why the tests are flawed. In any case, tests are written, which is the most important part.
@@ -91,23 +95,17 @@ corepack enable
 yarn install
 ```
 
-This installs dependencies for every workspace (`apps/api` and `apps/web`) in one pass, using Yarn's `node-modules` linker for maximum compatibility with native modules like `better-sqlite3`.
+### Running
 
 > [!WARNING]
 > The `.env` file has been committed to source control for the `api` application, which is abnormal. I did this to make it easier for evaluators to run the application locally without fiddling around with environment variables.
 
-### Common workspace commands
-
-All commands below are run from the repository root and are orchestrated by [Turborepo](https://turborepo.dev), which fans them out to the relevant workspace(s):
+To start the development server:
 
 ```bash
-yarn dev         # start apps/api and apps/web in watch mode
-yarn build       # build all workspaces
-yarn lint         # lint all workspaces
-yarn typecheck    # type-check all workspaces
-yarn test         # run tests in all workspaces
-yarn format       # format the repo with Prettier
-yarn format:check # check formatting without writing changes
+yarn dev
 ```
 
-Turbo tasks can also be scoped to a single workspace, e.g. `turbo run dev --filter=@event-feedback-hub/api`.
+The application can be viewed at [http://localhost:1337/](http://localhost:1337/).
+
+The database has been committed to source control so that information can already been populated for evaluators.

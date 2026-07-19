@@ -1,6 +1,7 @@
-import { Inject } from '@nestjs/common';
+import { Inject, UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
+import { ClerkAuthGuard } from '../auth/clerk-auth.guard';
 import { FeedbackFilterInput } from './dto/feedback-filter.input';
 import { FeedbackSubscriptionFilterInput } from './dto/feedback-subscription-filter.input';
 import { SubmitFeedbackInput } from './dto/submit-feedback.input';
@@ -39,6 +40,7 @@ export class EventsResolver {
   }
 
   @Mutation(() => Feedback)
+  @UseGuards(ClerkAuthGuard)
   submitFeedback(@Args('input') input: SubmitFeedbackInput): Promise<Feedback> {
     return this.eventsService.submitFeedback(input);
   }

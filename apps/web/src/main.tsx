@@ -1,14 +1,21 @@
+import { ClerkProvider } from '@clerk/react';
+import { shadcn } from '@clerk/ui/themes';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApolloProvider } from '@apollo/client/react';
 import './index.css';
 import App from './App.tsx';
-import { apolloClient } from '@/lib/apollo-client';
+import { ClerkApolloProvider } from '@/components/ClerkApolloProvider';
+
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!publishableKey) throw new Error('VITE_CLERK_PUBLISHABLE_KEY is not configured');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ApolloProvider client={apolloClient}>
-      <App />
-    </ApolloProvider>
+    <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/" appearance={{ theme: shadcn }}>
+      <ClerkApolloProvider>
+        <App />
+      </ClerkApolloProvider>
+    </ClerkProvider>
   </StrictMode>,
 );
