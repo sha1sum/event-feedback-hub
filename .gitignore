@@ -19,11 +19,6 @@ build/
 # Testing / coverage
 coverage/
 
-# SQLite databases
-*.sqlite
-*.sqlite3
-*.db
-
 # Logs
 *.log
 npm-debug.log*
